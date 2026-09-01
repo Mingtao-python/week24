@@ -1,0 +1,21 @@
+body {
+    font-family: Arial;
+    margin: 40px;
+}
+
+input {
+    display: block;
+    margin: 5px 0;
+    padding: 8px;
+    width: 200px;
+}
+
+button {
+    padding: 8px 12px;
+    margin-top: 10px;
+}
+
+#output {
+    margin-top: 20px;
+    white-space: pre-wrap;
+}

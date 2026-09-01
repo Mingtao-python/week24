@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Learning Platform V2</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>AI Learning Platform V2</h2>
+
+<div id="login-box">
+    <h3>Login</h3>
+    <input id="username" placeholder="Username">
+    <input id="password" placeholder="Password" type="password">
+    <button onclick="login()">Login</button>
+    <p id="login-status"></p>
+</div>
+
+<hr>
+
+<div id="actions" style="display:none;">
+    <h3>Actions</h3>
+
+    <button onclick="viewProgress()">View My Progress</button>
+    <button onclick="viewStudyPlan()">View My Study Plan</button>
+    <button onclick="generateStudyPlan()">Generate Study Plan</button>
+
+    <p id="output"></p>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

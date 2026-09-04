@@ -27,3 +27,46 @@ def test_teacher_must_be_assigned():
     # teacher 未被分配 → 必须 403
     r = client.get(f"/api/progress/{studentId}", headers={"token": tokenTeacher})
     assert r.status_code == 403
+
+def test_assigned_teacher_can_view():
+    tokenAdmin, adminId = login("admin", "123")
+    tokenTeacher, teacherId = login("teacher", "123")
+    tokenStudent, studentId = login("ming", "123")
+
+    # Admin assigns teacher to student
+    r = client.post(f"/api/assign/{teacherId}/{studentId}", headers={"token": tokenAdmin})
+    assert r.status_code == 200
+
+    # Teacher can now view assigned student's progress
+    client.put(f"/api/progress/{studentId}", json={"percentage": 60}, headers={"token": tokenStudent})
+    r = client.get(f"/api/progress/{studentId}", headers={"token": tokenTeacher})
+    assert r.status_code == 200
+    assert r.json()["percentage"] == 60
+
+def test_admin_can_view_student():
+    tokenAdmin, adminId = login("admin", "123")
+    tokenStudent, studentId = login("ming", "123")
+
+    # Student creates progress
+    client.put(f"/api/progress/{studentId}", json={"percentage": 70}, headers={"token": tokenStudent})
+
+    # Admin can view any student's progress
+    r = client.get(f"/api/progress/{studentId}", headers={"token": tokenAdmin})
+    assert r.status_code == 200
+    assert r.json()["percentage"] == 70
+
+def test_teacher_cannot_assign_student():
+    tokenTeacher, teacherId = login("teacher", "123")
+    tokenStudent, studentId = login("ming", "123")
+
+    # Teacher tries to assign student → must be 403
+    r = client.post(f"/api/assign/{teacherId}/{studentId}", headers={"token": tokenTeacher})
+    assert r.status_code == 403
+
+def test_student_cannot_assign_student():
+    tokenStudent, studentId = login("ming", "123")
+    tokenOtherStudent, otherId = login("tao", "123")
+
+    # Student tries to assign another student → must be 403
+    r = client.post(f"/api/assign/{otherId}/{studentId}", headers={"token": tokenStudent})
+    assert r.status_code == 403

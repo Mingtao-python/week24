@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from backend.auth import authenticate
-from backend.permissions import authorize
+from backend.permissions import authorize, require_role
 from backend.database import get_db # pyright: ignore[reportAttributeAccessIssue]
 
 router = APIRouter()
@@ -11,6 +11,9 @@ def assign_student(
     student_id: int,
     user=Depends(authenticate),
 ):
+    # Only admin can assign teachers to students
+    require_role(user, ["admin"])
+    
     conn = get_db()
     cur = conn.cursor()
     cur.execute(

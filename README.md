@@ -118,18 +118,28 @@ http://127.0.0.1:8000/docs
 ```
 
 # 4. Running the Frontend
-直接打开：
+
+Start a local HTTP server on port 3000:
+
+```bash
+cd frontend
+python -m http.server 3000
+```
+
+Then access:
 
 ```
-frontend/index.html
+http://localhost:3000
 ```
 
-即就可一使用：
+This matches the CORS configuration in the backend (`allow_origins=["http://localhost:3000"]`).
 
-- 登录
-- 查看进度
-- 查看学习计划
-- 调用模型网关
+You can now use:
+
+- Login
+- View Progress
+- View Study Plan
+- Call Model Gateway
 
 # 5. Running Tests
 

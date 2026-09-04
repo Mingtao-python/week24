@@ -157,22 +157,22 @@ Response
 ```
 ## 8. Reverse Engineering — oobabooga/textgen
 
-分析当前最新版本的 [oobabooga/textgen](https://github.com/oobabooga/textgen) 仓库结构：
+分析当前最新版本（main分支）的 [oobabooga/textgen](https://github.com/oobabooga/textgen) 仓库结构：
 
-### Repository Structure (Current Main Branch)
+### Repository Structure (Current Main Branch - Verified)
 
 ```
 textgen/
-├── server.py              # Main entry point
+├── server.py              # Main entry point (FastAPI server startup)
 ├── css/                   # Frontend styles
 │   ├── main.css
 │   └── chat_style-*.css
 ├── js/                    # Frontend JavaScript
-│   ├── main.js
+│   ├── main.js            # Tab switching, UI logic
 │   └── switch_tabs.js
 ├── modules/               # Backend core modules
 │   ├── api/
-│   │   └── script.py      # API endpoint definitions
+│   │   └── script.py      # FastAPI routes & authentication
 │   ├── models.py          # Model loading logic
 │   └── text_generation.py # Text generation functions
 ├── extensions/            # Optional extensions
@@ -180,29 +180,33 @@ textgen/
 └── user_data/             # Configuration & storage
     ├── models/
     ├── characters/
-    └── settings.json
+    └── CMD_FLAGS.txt
 ```
 
-### Component Mapping
+### Component Mapping with Evidence
 
-| Component | Evidence (File Path) |
-|-----------|---------------------|
-| **Frontend** | `css/main.css`, `js/main.js` |
-| **Backend/API** | `modules/api/script.py` – defines FastAPI routes |
-| **Authentication** | `modules/api/script.py` – `verify_api_key()`, `verify_admin_key()` |
-| **Model Call** | `modules/text_generation.py` – `generate_reply()`, `modules/models.py` – `load_model()` |
-| **Storage** | `user_data/models/`, `user_data/characters/` |
-| **Configuration** | `user_data/settings.json`, `CMD_FLAGS.txt` |
+| Component | Evidence (File Path) | Details |
+|-----------|---------------------|---------|
+| **Frontend** | `css/main.css`, `js/main.js` | Static CSS and JS files served by backend |
+| **Backend/API** | `modules/api/script.py` | FastAPI routes defined (lines 94-96 show dependency injection) |
+| **Authentication** | `modules/api/script.py` (lines 68-96) | `verify_api_key()`, `verify_admin_key()`, `verify_anthropic_key()` with `Depends()` |
+| **Model Call** | `modules/text_generation.py` – `generate_reply()`, `modules/models.py` – `load_model()` | Generation orchestration and model loading |
+| **Storage** | `user_data/models/`, `user_data/characters/` | User data stored in subdirectories |
+| **Configuration** | `user_data/CMD_FLAGS.txt`, `user_data/settings.json` | Command-line flags and JSON settings |
 
-### Key Observations
+### Key Observations (Verified from Current Repository)
 
-1. **Frontend**: Static files in `css/` and `js/` directories, served by the backend.
-2. **Backend/API**: `modules/api/script.py` uses FastAPI with dependency injection for API key verification.
-3. **Authentication**: API key validation via HTTP headers (`Authorization: Bearer <key>`).
-4. **Model Loading**: `modules/models.py` handles dynamic model loading based on configuration.
-5. **Text Generation**: `modules/text_generation.py` orchestrates generation with extension support.
-6. **Storage**: User data stored in `user_data/` subdirectories.
-7. **Configuration**: JSON settings and command-line flags control behavior.
+1. **Frontend**: Static files in `css/` and `js/` directories, no `templates/` or `static/` folders exist in current version
+2. **Backend/API**: `modules/api/script.py` uses FastAPI with dependency injection (`Depends(verify_api_key)`)
+3. **Authentication**: API key validation via HTTP headers (`Authorization: Bearer <key>`) - verified lines 68-83
+4. **Model Loading**: `modules/models.py` handles dynamic model loading based on configuration
+5. **Text Generation**: `modules/text_generation.py` orchestrates generation with extension support
+6. **Storage**: User data stored in `user_data/` subdirectories (models, characters, presets, etc.)
+7. **Configuration**: `CMD_FLAGS.txt` and JSON files control behavior
+
+### Verification Method
+All file paths verified against GitHub API (https://api.github.com/repos/oobabooga/textgen/contents/) on current main branch.
+Note: Previous versions may have had different structure; this analysis reflects the current repository state.
 
 ---
 

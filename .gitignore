@@ -1,29 +1,8 @@
-```gitignore
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-python/
-venv/
-env/
-ENV/
-.venv/
-.env/
-.env.local
-.env.
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
+# Database files
+*.db
+
+# Office documents
+*.docx
+
+# Logs
 *.log
-.git/modules/
-.DS_Store
-Thumbs.db
-```

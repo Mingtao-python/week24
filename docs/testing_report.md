@@ -39,7 +39,6 @@ Backend 启动后，在 frontend 目录运行 python -m http.server 3000。
 
 API pytest 测试不等同于真实浏览器端到端测试。
 
-
 ## 4. Verified Results
 
 - 39 tests passed。
@@ -48,7 +47,6 @@ API pytest 测试不等同于真实浏览器端到端测试。
 - 浏览器使用 http://localhost:3000，Backend 使用独立的临时测试数据库。
 - Python 3.12；FastAPI 0.149.0；pytest 9.1.1；httpx 0.28.1。
 - 依赖提示：Starlette 当前对 httpx TestClient 发出弃用警告；本次测试通过。
-
 
 ## Role management verification
 

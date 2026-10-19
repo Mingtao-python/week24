@@ -1,13 +1,10 @@
 import sqlite3
 from pathlib import Path
-
 DB_PATH = Path(__file__).resolve().parent.parent / "database" / "week24.db"
-
 def init_db():
     Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,7 +13,6 @@ def init_db():
         role TEXT
     )
     """)
-
     cur.execute("""
     CREATE TABLE IF NOT EXISTS studyplan (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +21,6 @@ def init_db():
         FOREIGN KEY(user_id) REFERENCES users(id)
     )
     """)
-
     cur.execute("""
     CREATE TABLE IF NOT EXISTS progress (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,10 +38,7 @@ def init_db():
         FOREIGN KEY(student_id) REFERENCES users(id)
     )
     """)
-
-
     conn.commit()
     conn.close()
-
 def get_db():
     return sqlite3.connect(DB_PATH)

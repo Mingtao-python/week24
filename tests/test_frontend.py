@@ -1,9 +1,6 @@
 from fastapi.testclient import TestClient
 from backend.main import app
-
 client = TestClient(app)
-
-
 def test_homepage_and_assets():
     response = client.get("/")
     assert response.status_code == 200
@@ -12,8 +9,6 @@ def test_homepage_and_assets():
     assert 'id="login-form"' in response.text
     for asset in ["/app.js", "/style.css"]:
         assert client.get(asset).status_code == 200
-
-
 def test_frontend_mount_preserves_api_routes():
     assert client.get("/docs").status_code == 200
     assert "/api/users/login" in client.get("/openapi.json").json()["paths"]

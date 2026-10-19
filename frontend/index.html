@@ -1,169 +1,77 @@
 <!doctype html>
-
 <html lang="zh-CN">
-
 <head>
-
   <meta charset="utf-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <title>AI Learning Platform V2</title>
-
   <link rel="stylesheet" href="style.css">
-
   <script src="app.js" defer></script>
-
 </head>
-
 <body>
-
 <main>
-
   <header><h1>AI Learning Platform V2</h1><p id="identity">请登录 / Sign in</p></header>
-
-
-
   <section id="login-panel">
-
     <h2>Login 登录</h2>
-
     <form id="login-form">
-
       <label>Username 用户名<input id="username" autocomplete="username" required></label>
-
       <label>Password 密码<input id="password" type="password" autocomplete="current-password" required></label>
-
       <button type="submit">Login 登录</button>
-
       <button type="button" id="register">Create student account 注册学生</button>
-
     </form>
     <button type="button" id="logout" hidden>Logout 退出</button>
-
   </section>
-
-
-
   <section id="student-picker" hidden>
-
     <label id="student-label" for="student-id">Student 学生</label>
-
     <select id="student-id"></select>
-
   </section>
-
-
-
   <section id="teacher-panel" hidden>
-
     <h2>My students 我的学生</h2>
     <button type="button" id="refresh-students">Refresh students 刷新学生</button>
-
     <p id="teacher-empty" hidden>还没有分配的学生。</p>
-
     <ul id="teacher-students"></ul>
-
   </section>
-
-
-
   <section id="admin-panel" hidden>
-
     <h2>Users 用户管理</h2>
-
     <p>选择角色后点击 Save。重置密码后，该用户需要重新登录。</p>
-
     <div id="users-list"></div>
-
   </section>
-
-
-
   <section id="assignment-panel" hidden>
-
     <h2>Assign a student 分配学生</h2>
-
     <form id="assign-form">
-
       <label>Teacher 教师<select id="teacher-id" required></select></label>
-
       <label>Student 学生<select id="assigned-student-id" required></select></label>
-
       <button type="submit">Assign 分配</button>
-
     </form>
-
   </section>
-
-
-
   <div id="learning-panel" hidden>
-
     <section id="progress-panel">
-
       <h2>Progress 学习进度</h2>
-
       <p id="progress-value">请选择学生并点击 Read。</p>
-
       <form id="progress-form" hidden>
-
         <label>Progress 百分比<input id="percentage" type="number" min="0" max="100" step="1" required></label>
-
         <button type="submit">Save progress 保存进度</button>
-
       </form>
-
       <button type="button" id="read-progress">Read progress 查看进度</button>
-
     </section>
-
-
-
     <section id="plan-panel">
-
       <h2>Study plan 学习计划</h2>
-
       <pre id="plan-value">请选择学生并点击 Read。</pre>
-
       <form id="plan-form" hidden>
-
         <label>Plan 学习计划<textarea id="plan-content" maxlength="1000" required></textarea></label>
-
         <button type="submit">Save plan 保存计划</button>
-
       </form>
-
       <button type="button" id="read-plan">Read plan 查看计划</button>
-
     </section>
-
-
-
     <section id="model-panel">
-
       <h2>Study helper 学习助手</h2>
-
       <form id="model-form">
-
         <label>What are you studying? 学习目标<textarea id="prompt" maxlength="1000" required></textarea></label>
-
         <button type="submit">Generate 生成建议</button>
-
       </form>
-
       <pre id="model-output"></pre>
-
     </section>
-
   </div>
-
-
-
   <p id="status" role="status" aria-live="polite"></p>
-
 </main>
-
 </body>
-
 </html>

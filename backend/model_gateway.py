@@ -1,5 +1,4 @@
 from typing import Dict
-
 # 模拟模型调用（真实项目里可以接 OpenAI / Azure / 本地模型）
 def call_model(prompt: str, context: Dict | None = None) -> str:
     """

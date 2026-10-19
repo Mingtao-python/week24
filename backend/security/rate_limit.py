@@ -1,12 +1,9 @@
 import time
 from fastapi import HTTPException
-
 # 简单内存限流：token → [timestamps]
 requests_log = {}
-
 MAX_REQUESTS = 20
 WINDOW_SECONDS = 60
-
 def check_rate_limit(token: str):
     now = time.time()
     if token not in requests_log:

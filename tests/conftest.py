@@ -3,8 +3,6 @@ from backend import database
 from backend.security.rate_limit import requests_log
 from backend.utils.tokens import tokens
 from backend.utils.hashing import hash_password
-
-
 @pytest.fixture(autouse=True)
 def test_database(tmp_path, monkeypatch):
     # 每个测试使用独立数据库，不修改 database/week24.db

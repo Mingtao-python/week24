@@ -1,8 +1,45 @@
 # Database files
 *.db
 
-# Office documents
-*.docx
+# Python specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.Python
+env/
+venv/
+.venv/
+.ENV
+.ENV.local
+.env
+.env.local
+.env.*
 
 # Logs
 *.log
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.mypy_cache/

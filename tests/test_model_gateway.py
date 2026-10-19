@@ -7,6 +7,7 @@ client = TestClient(app)
 
 def login(username, password):
     r = client.post("/api/users/login", json={"username": username, "password": password})
+    assert r.status_code == 200
     return r.json()["token"]
 
 def test_model_requires_auth():

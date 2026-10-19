@@ -1,8 +1,10 @@
 import sqlite3
+from pathlib import Path
 
-DB_PATH = "database/week24.db"
+DB_PATH = Path(__file__).resolve().parent.parent / "database" / "week24.db"
 
 def init_db():
+    Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 

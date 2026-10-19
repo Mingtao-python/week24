@@ -1,237 +1,65 @@
 # Architecture — AI Learning Platform V2
 
-## 1. Overview
+## 1. System
 
-AI Learning Platform V2 是一个完整的全栈学习系统，包含：
-
-- 前端（HTML + JavaScript）
-- 后端（FastAPI）
-- 数据库（SQLite）
-- 模型网关（Model Gateway）
-- 权限系统（RBAC + Ownership + Teacher Assignment）
-- 安全链（Validation → Auth → Authorization → Rate Limit → Error Handling）
-- 测试套件（pytest）
-
-系统目标：  
-为学生、老师、管理员提供一个安全、可扩展、可验证的学习平台。
-
----
-
-## 2. Request Trace — Generate Study Plan
-
-完整追踪用户生成学习计划的请求流程：
-
-| Step | Data | Decision | Failure |
-|------|------|----------|---------|
-| Browser → API | token + study goal request | format correct? | network failure |
-| Authentication | token | valid identity? | 401 Unauthorized |
-| Validation | goal/subject | valid schema/length? | 400 Bad Request |
-| Authorization | user/resource | allowed? | 403 Forbidden |
-| Model Gateway | prompt/context | model available? | timeout / 5xx |
-| Database | generated plan | authorized write? | DB failure |
-| Output Validation | model result | safe/valid? | invalid output |
-| Backend → Browser | JSON response | — | network failure |
-
----
-
-## 3. System Architecture Diagram
-
-```
-Browser (Frontend)
-↓
-FastAPI (Backend)
-↓
-Authentication (token → user)
-↓
-Authorization (role + ownership + teacher assignment)
-↓
-Validation (input schema + custom rules)
-↓
-Rate Limit (per-token)
-↓
-Model Gateway / Database
-↓
-Error Handling (safe JSON)
-↓
-Response
+```text
+Browser (http://localhost:3000)
+↓ fetch + token
+FastAPI (http://127.0.0.1:8000)
+↓ Authentication
+Permission (role + owner + teacher assignment)
+↓ Validation
+Model Gateway / SQLite
+↓ JSON Response
+Browser
 ```
 
----
+Rate Limit 在 HTTP middleware 中按 token 计数。CORS 允许 http://localhost:3000。
+注册和登录是公开入口，业务接口使用 authenticate 依赖。
 
-## 3. Backend Structure
+## 2. Responsibilities
 
-```
-backend/
-main.py
-auth.py
-permissions.py
-database.py
-model_gateway.py
-routes/
-users.py
-progress.py
-studyplan.py
-assign.py
-security/
-validation.py
-rate_limit.py
-errors.py
-```
+- frontend/：收集输入、展示结果、调用 API。不能决定最终权限。
+- backend/auth.py：Token → 数据库用户，读取真实角色。
+- backend/permissions.py：Student 访问自己，Teacher 访问已分配学生，Admin 访问学习数据。
+- backend/routes/assign.py：Admin-only，验证 Teacher / Student 角色后保存关系。
+- backend/routes/progress.py：以 user_id 查询和更新，首次更新创建该用户的进度。
+- backend/routes/studyplan.py：创建计划，读取最近保存的计划。
+- backend/model_gateway.py：本地模拟模型，接收 prompt + context，返回文本。
+- backend/database.py：初始化 SQLite 表和连接。
 
----
+## 3. Data
 
-## 4. Frontend Structure
+| Table | Fields | Use |
+|---|---|---|
+| users | id, username, password, role | 身份和角色 |
+| progress | id, user_id, percentage | 学生进度 |
+| studyplan | id, user_id, content | 学习计划记录 |
+| teacher_students | id, teacher_id, student_id | 教师分配关系 |
 
-```
-frontend/
-index.html
-app.js
-style.css
-```
+progress.id 是记录编号，progress.user_id 是用户编号。
+Frontend / API 使用 /api/progress/user/{user_id}，SQL 使用 WHERE user_id=?。
+GET 不存在的进度返回 404。PUT 先验证权限、输入和用户存在，再创建或更新。
 
-前端通过 fetch 调用后端 API，实现：
+## 4. Model Path
 
-- 登录  
-- 查看进度  
-- 查看学习计划  
-- 调用模型网关生成学习计划  
-
----
-
-## 5. Database Schema
-
-### users
-| id | username | password | role |
-|----|----------|----------|------|
-| PK | TEXT     | TEXT     | student/teacher/admin |
-
-### progress
-| id | user_id | percentage |
-|----|---------|------------|
-
-### studyplan
-| id | user_id | content |
-|----|---------|---------|
-
-### teacher_students
-| id | teacher_id | student_id |
-|----|------------|------------|
-
----
-
-## 6. Model Gateway
-
-模型网关统一管理所有模型调用：
-
-```python
-def call_model(prompt, context):
-    if "study plan" in prompt.lower():
-        return "Weekly Study Plan: 1) Review notes 2) Practice problems 3) Take a quiz."
-    return "Model response placeholder."
-```
-它被保护在：
-- Authentication
-- Validation
-- Rate Limit
-- Error Handling
-之后。
-
-## 7. Security Chain
-完整安全链：
-```
-CORS
-↓
-Rate Limit Middleware
-↓
-Authentication
-↓
-Authorization
-↓
-Validation
-↓
-Business Logic (DB / Model)
-↓
-Error Handling
-↓
-Response
-```
-## 8. Reverse Engineering — oobabooga/textgen
-
-分析当前最新版本（main分支）的 [oobabooga/textgen](https://github.com/oobabooga/textgen) 仓库结构：
-
-### Repository Structure (Current Main Branch - Verified)
-
-```
-textgen/
-├── server.py              # Main entry point (FastAPI server startup)
-├── css/                   # Frontend styles
-│   ├── main.css
-│   └── chat_style-*.css
-├── js/                    # Frontend JavaScript
-│   ├── main.js            # Tab switching, UI logic
-│   └── switch_tabs.js
-├── modules/               # Backend core modules
-│   ├── api/
-│   │   └── script.py      # FastAPI routes & authentication
-│   ├── models.py          # Model loading logic
-│   └── text_generation.py # Text generation functions
-├── extensions/            # Optional extensions
-│   └── (various extension folders)
-└── user_data/             # Configuration & storage
-    ├── models/
-    ├── characters/
-    └── CMD_FLAGS.txt
+```text
+Frontend prompt
+→ POST /api/model/generate
+→ Authentication + Validation
+→ call_model(prompt, context)
+→ model_output
+→ Frontend 草稿
+→ 用户确认后 POST /api/studyplan/{user_id}
+→ SQLite
 ```
 
-### Component Mapping with Evidence
+生成与保存是两个明确动作。当前模型不会直接读写数据库。
+没有实现外部模型调用、自动保存或模型内容安全审核。
 
-| Component | Evidence (File Path) | Details |
-|-----------|---------------------|---------|
-| **Frontend** | `css/main.css`, `js/main.js` | Static CSS and JS files served by backend |
-| **Backend/API** | `modules/api/script.py` | FastAPI routes defined (lines 94-96 show dependency injection) |
-| **Authentication** | `modules/api/script.py` (lines 68-96) | `verify_api_key()`, `verify_admin_key()`, `verify_anthropic_key()` with `Depends()` |
-| **Model Call** | `modules/text_generation.py` – `generate_reply()`, `modules/models.py` – `load_model()` | Generation orchestration and model loading |
-| **Storage** | `user_data/models/`, `user_data/characters/` | User data stored in subdirectories |
-| **Configuration** | `user_data/CMD_FLAGS.txt`, `user_data/settings.json` | Command-line flags and JSON settings |
+## 5. Runtime
 
-### Key Observations (Verified from Current Repository)
-
-1. **Frontend**: Static files in `css/` and `js/` directories, no `templates/` or `static/` folders exist in current version
-2. **Backend/API**: `modules/api/script.py` uses FastAPI with dependency injection (`Depends(verify_api_key)`)
-3. **Authentication**: API key validation via HTTP headers (`Authorization: Bearer <key>`) - verified lines 68-83
-4. **Model Loading**: `modules/models.py` handles dynamic model loading based on configuration
-5. **Text Generation**: `modules/text_generation.py` orchestrates generation with extension support
-6. **Storage**: User data stored in `user_data/` subdirectories (models, characters, presets, etc.)
-7. **Configuration**: `CMD_FLAGS.txt` and JSON files control behavior
-
-### Verification Method
-All file paths verified against GitHub API (https://api.github.com/repos/oobabooga/textgen/contents/) on current main branch.
-Note: Previous versions may have had different structure; this analysis reflects the current repository state.
-
----
-
-## 9. Trust Boundary Verification
-
-每个信任边界必须验证的内容：
-
-| Trust Boundary | Must Verify |
-|----------------|-------------|
-| Browser → Backend | authentication, schema, type, length |
-| Token → User Identity | token validity, user exists |
-| Backend → Model | allowed context, data minimisation |
-| Model → Backend | output validity, unsafe content |
-| Backend → Database | role, ownership, permitted action |
-| External API → Backend | status, schema, unexpected content |
-
----
-
-## 10. Summary
-本架构满足 Week24 Product 所有要求：
-- 全栈系统
-- 完整权限系统
-- 安全链
-- 模型网关
-- 前端 UI
-- 测试覆盖
-- 文档完整
-这是一个可运行、可扩展、可评分的完整学习平台系统。
+- 数据库路径以项目目录为基准，不依赖终端当前目录。
+- Token 和 Rate Limit 使用进程内字典，当前按单进程原型运行。
+- 测试使用临时数据库，和真实学习数据分开。
+- 用户密码沿用当前项目的 SHA-256 实现；本项目仍是学习原型。

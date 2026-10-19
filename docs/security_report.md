@@ -1,204 +1,51 @@
 # Security Report — AI Learning Platform V2
 
-AI Learning Platform V2 implements a complete, multi-layered security system designed to protect user data, enforce permissions, validate input, prevent abuse, and ensure safe model interactions.  
-This document explains the full security chain and how each layer works.
+## 1. Authentication
 
----
+- Login 返回 token + user_id + role。
+- authenticate() 通过 token 查用户，再从数据库读取角色。
+- 缺少 / 无效 token → 401。
+- Register 固定创建 Student。注册、登录无需 token。
 
-# 1. Security Chain Overview
+## 2. Authorization
 
-Every request in the system passes through the following layers:
-```
-CORS
-↓
-Rate Limit Middleware
-↓
-Authentication (token → user)
-↓
-Authorization (RBAC + ownership + teacher assignment)
-↓
-Validation (schema + custom rules)
-↓
-Business Logic (DB / Model Gateway)
-↓
-Error Handling (safe JSON)
-↓
-Response
-```
+| Role | StudyPlan / Progress | Assignment |
+|---|---|---|
+| Student | 自己的数据 | 403 |
+| Teacher | 已分配学生的数据 | 403 |
+| Admin | 学习数据 | 200，需有效 Teacher / Student |
 
-This chain ensures that *no request can bypass security*, even if the route is misconfigured.
+Assignment 先执行 require_role(user, ["admin"])，再访问数据库。
+Teacher 无法把任意学生分配给自己。重复分配不新增重复关系。
+页面隐藏 Admin 按钮不能代替后端检查。
 
----
+## 3. Ownership
 
-# 2. Authentication
+Progress 使用 /api/progress/user/{user_id}，按 user_id 检查权限和读写。
+不会把 progress.id 当作 user_id。
+不存在的用户更新返回 404，不会给当前用户偷偷创建资源。
+输入验证失败不写入进度。
 
-Implemented in `backend/auth.py`.
+## 4. Validation
 
-### Mechanism
-- Token-based authentication.
-- User logs in via `/api/users/login`.
-- Backend returns:
-  - `token`
-  - `user_id`
-  - `role`
+- 缺少必填字段 / 类型不符 → 422。
+- 计划和模型 prompt 为空白或超过 1000 字符 → 400。
+- percentage 不在 0–100 → 400。
+- Assignment 用户不存在 → 404，角色不匹配 → 400。
 
-### Security Rules
-- Missing token → `401 Unauthorized`
-- Invalid token → `401 Unauthorized`
-- Token maps to a user in the database.
+长度检查不能证明模型输入或输出安全，当前没有专门的内容审核。
 
-### Why it matters
-Authentication ensures that every request is tied to a real user identity.
+## 5. Rate Limit and Errors
 
----
+- 单个 token 在 60 秒内最多 20 次请求。
+- 第 21 次由 middleware 返回 429 JSON。
+- 业务 HTTPException 返回明确状态和 detail。
+- 未处理异常使用统一 500 消息。
+- CORS 限制浏览器来源，权限仍由后端独立验证。
 
-# 3. Authorization (RBAC + Ownership + Teacher Assignment)
+## 6. Current Limits
 
-Implemented in `backend/permissions.py`.
-
-### Role Matrix
-
-| Role     | Allowed Actions |
-|----------|-----------------|
-| student  | Only own resources |
-| teacher  | Only assigned students |
-| admin    | Full access |
-
-### Ownership Enforcement
-Students can only access their own:
-
-- progress  
-- studyplan  
-
-If a student tries to access another student's resource → `403 Forbidden`.
-
-### Teacher Assignment
-Teachers must be explicitly assigned to students:
-
-```
-POST /api/assign/{teacher_id}/{student_id}
-```
-
-If a teacher tries to access a non-assigned student → `403 Forbidden`.
-
-### Admin
-Admin bypasses all checks.
-
-### Why it matters
-Authorization prevents horizontal privilege escalation and ensures strict resource isolation.
-
----
-
-# 4. Input Validation
-
-Implemented in `backend/security/validation.py`.
-
-### Validation Rules
-- Empty input → `400 Bad Request`
-- Input longer than 1000 chars → `400 Bad Request`
-- Progress percentage must be 0–100 → `400 Bad Request`
-
-### Validation Applied To
-- Model Gateway (`/api/model/generate`)
-- StudyPlan creation
-- Progress update
-
-### Why it matters
-Validation prevents malformed input, prompt injection attempts, and accidental misuse.
-
----
-
-# 5. Rate Limiting
-
-Implemented in `backend/security/rate_limit.py`.
-
-### Rules
-- Each token can make **20 requests per minute**.
-- The **21st request** returns:
-```
-429 Too Many Requests
-```
-
-### Why it matters
-Rate limiting prevents:
-
-- Abuse  
-- Infinite loops  
-- Scripted attacks  
-- Model spamming  
-
----
-
-# 6. Error Handling
-
-Implemented in `backend/security/errors.py`.
-
-### Handled Exceptions
-- `HTTPException` → returns status + detail
-- `ValidationError` → returns `400 Invalid input format`
-- Generic `Exception` → returns `500 Internal server error`
-
-### Security Benefits
-- No stack traces leak to the client  
-- No internal error messages  
-- All errors return safe JSON  
-- Prevents information disclosure  
-
----
-
-# 7. Model Gateway Security
-
-Model Gateway (`/api/model/generate`) is protected by:
-
-### ✔ Authentication  
-Token required.
-
-### ✔ Authorization  
-Can be extended to role-based model access.
-
-### ✔ Validation  
-Prompt must be non-empty and safe.
-
-### ✔ Rate Limit  
-Model calls count toward the 20/min limit.
-
-### ✔ Error Handling  
-All model errors return safe JSON.
-
-### Why it matters
-Model Gateway is often the most sensitive part of an AI system.  
-This design ensures it cannot be abused or exploited.
-
----
-
-# 8. Teacher–Student Assignment Security
-
-Teacher assignment is stored in:
-
-```
-teacher_students (teacher_id, student_id)
-```
-
-Security rules:
-
-- Only admin can assign students.
-- Teacher can only access assigned students.
-- Students cannot assign themselves.
-
-This prevents unauthorized access to student data.
-
----
-
-# 9. Summary
-
-AI Learning Platform V2 implements a complete, production-grade security system:
-
-- ✔ Authentication  
-- ✔ Authorization (RBAC + ownership + teacher assignment)  
-- ✔ Input validation  
-- ✔ Rate limiting  
-- ✔ Safe error handling  
-- ✔ Secure model gateway  
-- ✔ Full test coverage  
-
-This security architecture fully satisfies Week24 Product requirements and ensures the system is safe, robust, and ready for deployment.
+这是本地学习原型。Token 和限流记录保存在进程内，未实现过期、服务器端注销和多进程共享。
+密码仍使用原有 SHA-256，尚未升级为带盐的密码哈希。
+Model Gateway 是模拟回复，未接外部 API。
+当前测试验证列出的行为，不代表生产环境安全审计。

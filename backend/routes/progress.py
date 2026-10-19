@@ -1,73 +1,130 @@
 from fastapi import APIRouter, HTTPException, Depends
+
 from backend.auth import authenticate
-from backend.permissions import authorize
+
+from backend.permissions import authorize, require_role
+
 from backend.models import ProgressUpdate
-from backend.database import get_db # pyright: ignore[reportAttributeAccessIssue]
-from backend.security.validation import validate_study_question
+
+from backend.database import get_db
+
+
+
 router = APIRouter()
 
 
-@router.put("/{progress_id}")
+
+
+
+@router.put("/user/{user_id}")
+
 def update_progress(
-    progress_id: int,
+
+    user_id: int,
+
     update: ProgressUpdate,
+
     user=Depends(authenticate),
+
 ):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT user_id FROM progress WHERE id=?",
-        (progress_id,)
-    )
-    row = cur.fetchone()
 
-    if not row:
-        # Create progress record if not exists
-        cur.execute(
-            "INSERT INTO progress (user_id, percentage) VALUES (?, ?)",
-            (user["id"], 0)
-        )
-        conn.commit()
-        progress_id = cur.lastrowid
-        owner_id = user["id"]
-    else:
-        owner_id = row[0]
-        authorize(user, action="update_progress", resource_owner_id=owner_id)
+    require_role(user, ["student", "admin"])
+    authorize(user, action="update_progress", resource_owner_id=user_id)
 
-    # Validation
+
+
     percentage = update.percentage
+
     if percentage < 0 or percentage > 100:
+
         raise HTTPException(status_code=400, detail="Percentage must be 0–100")
 
-    cur.execute(
-        "UPDATE progress SET percentage=? WHERE id=?",
-        (percentage, progress_id)
-    )
-    conn.commit()
-    conn.close()
+
+
+    conn = get_db()
+
+    try:
+
+        cur = conn.cursor()
+
+        cur.execute("SELECT 1 FROM users WHERE id=?", (user_id,))
+
+        if not cur.fetchone():
+
+            raise HTTPException(status_code=404, detail="User not found")
+
+
+
+        # 按 user_id 更新，不把 user_id 当成 progress.id
+
+        cur.execute("SELECT id FROM progress WHERE user_id=?", (user_id,))
+
+        if cur.fetchone():
+
+            cur.execute(
+
+                "UPDATE progress SET percentage=? WHERE user_id=?",
+
+                (percentage, user_id)
+
+            )
+
+        else:
+
+            cur.execute(
+
+                "INSERT INTO progress (user_id, percentage) VALUES (?, ?)",
+
+                (user_id, percentage)
+
+            )
+
+        conn.commit()
+
+    finally:
+
+        conn.close()
+
+
 
     return {"message": "Progress updated"}
 
-@router.get("/{progress_id}")
-def get_progress(
-    progress_id: int,
-    user=Depends(authenticate),
-):
+
+
+
+
+@router.get("/user/{user_id}")
+
+def get_progress(user_id: int, user=Depends(authenticate)):
+
+    authorize(user, action="view_progress", resource_owner_id=user_id)
+
+
+
     conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT user_id, percentage FROM progress WHERE id=?",
-        (progress_id,)
-    )
-    row = cur.fetchone()
-    conn.close()
+
+    try:
+
+        cur = conn.cursor()
+
+        cur.execute(
+
+            "SELECT percentage FROM progress WHERE user_id=? ORDER BY id DESC LIMIT 1",
+
+            (user_id,)
+
+        )
+
+        row = cur.fetchone()
+
+    finally:
+
+        conn.close()
+
+
 
     if not row:
+
         raise HTTPException(status_code=404, detail="Progress not found")
 
-    owner_id = row[0]
-
-    authorize(user, action="view_progress", resource_owner_id=owner_id)
-
-    return {"user_id": owner_id, "percentage": row[1]}
-
+    return {"user_id": user_id, "percentage": row[0]}

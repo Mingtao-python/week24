@@ -11,6 +11,7 @@ def test_login_success():
     data = r.json()
     assert "token" in data
     assert "user_id" in data
+    assert data["role"] == "student"
 
 def test_login_fail_wrong_password():
     r = client.post("/api/users/login", json={"username": "ming", "password": "wrong"})
@@ -19,4 +20,4 @@ def test_login_fail_wrong_password():
 
 def test_login_fail_missing_fields():
     r = client.post("/api/users/login", json={"username": "ming"})
-    assert r.status_code == 400 or r.status_code == 422
+    assert r.status_code == 422

@@ -48,12 +48,34 @@ API pytest 测试不等同于真实浏览器端到端测试。
 - Python 3.12；FastAPI 0.149.0；pytest 9.1.1；httpx 0.28.1。
 - 依赖提示：Starlette 当前对 httpx TestClient 发出弃用警告；本次测试通过。
 
-## Role management verification
+## 5. Role management verification
 
-- 51 pytest checks passed, using disposable databases.
+### 5.1 Input
+
+Here is the input:
+
+```bash
+python -m pytest -q
+```
+
+## 5.2 Output
+
+- 51 pytest checks passed, with only one warning about the model fastapi(which can be ignored), using disposable databases.
 - Teacher directory contains only assigned students. Unassigned student data returns 403.
 - Teachers have read access; write and model-generation requests return 403.
 - Only Admin can list all users, change roles, or reset passwords.
 - Password reset rejects invalid lengths, changes login credentials, and revokes old tokens.
 - Browser checks covered Student, Admin, assigned Teacher, and Teacher without students.
 - Role controls are hidden as appropriate; empty Teacher views hide learning controls.
+- Here is the actual output:
+
+```
+...................................................                                                                                                      [100%]
+====================================================================== warnings summary =======================================================================
+C:\Users\mingt\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\mingt\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+51 passed, 1 warning in 2.59s
+```

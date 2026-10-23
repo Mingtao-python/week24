@@ -1,3 +1,16 @@
+//只剩非常集中的收尾：
+//frontend/app.js
+///api/progress/${userId}
+//改成
+///api/progress/user/${userId}
+//tests/test_progress.py同样改成新路径。
+//运行完整：
+//python -m pytest -q
+//确认不是只“写了测试”，而是真正全部PASS。
+//更新docs/testing_report.md，把新增测试和真实结果写进去。
+//完成这4个小收尾后，Week24 Product从目前源码状态看，就基本可以冻结交付了。
+
+//My comment: this was aready done in the previus commit(line 234 in this version).
 const API = location.port === "3000" ? "http://127.0.0.1:8000" : location.origin;
 let session = null;
 let students = [];
